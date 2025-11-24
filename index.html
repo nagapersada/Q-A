@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DVNP Q&A</title>
+    
+    <meta name="theme-color" content="#8A2BE2"/>
+    <link rel="manifest" href="manifest.json">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* === CSS UTAMA (RESET & BASE) === */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #050505; /* Background hitam pekat */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; /* Mencegah body scroll, kita scroll di dalam slide */
+            color: white;
+        }
+
+        /* === STRUKTUR SLIDE === */
+        .slide {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Default Portrait: Rata Tengah */
+            
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('images/1000173031.jpg'); /* Background Image Global */
+            background-size: cover;
+            background-position: center;
+            
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            z-index: 1;
+            
+            /* KUNCI: Scroll di dalam slide */
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 10;
+        }
+
+        /* === CONTAINER UMUM === */
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* LOGO & TEXT DI SLIDE 1 */
+        .team-logo {
+            width: 140px;
+            border-radius: 50%;
+            border: 3px solid #ff6b00;
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        h1 { margin: 0 0 1rem 0; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        p { margin-bottom: 2rem; line-height: 1.6; color: #ddd; font-size: 1rem; }
+
+        /* TOMBOL UTAMA */
+        button {
+            background: linear-gradient(45deg, #ff6b00, #ff8c00);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:active { transform: scale(0.95); }
+
+        /* === SLIDE 2: PLAYLIST AREA === */
+        .playlist-wrapper {
+            width: 100%;
+            max-width: 600px;
+            padding: 1rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Pastikan wrapper tidak terjepit */
+            min-height: min-content; 
+        }
+
+        #backBtn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            align-self: flex-start; /* Tombol kembali di kiri */
+        }
+
+        #audioPlayer {
+            width: 100%;
+            margin-bottom: 10px;
+            border-radius: 10px;
+        }
+
+        #nowPlaying {
+            font-size: 0.9rem;
+            color: #ffb74d;
+            margin-bottom: 15px;
+            font-style: italic;
+            text-align: center;
+        }
+
+        #showLyricsBtn {
+            width: 100%;
+            background: transparent;
+            border: 2px solid #ff6b00;
+            color: #ff6b00;
+            margin-bottom: 20px;
+        }
+        #showLyricsBtn:hover { background: #ff6b00; color: white; }
+
+        /* DAFTAR PERTANYAAN (LIST) */
+        #playlist {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+            text-align: left;
+            padding-bottom: 50px; /* Ruang extra di bawah agar list terakhir tidak kepotong */
+        }
+
+        #playlist li {
+            background: rgba(255, 255, 255, 0.08);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        #playlist li:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        #playlist li.active-question {
+            background: rgba(255, 107, 0, 0.2);
+            border-left: 3px solid #ff6b00;
+        }
+
+        #playlist li strong {
+            display: block;
+            color: white;
+            font-size: 1rem;
+        }
+
+        /* === MODAL NARASI === */
+        #lyricsOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        #lyricsOverlay.hidden { display: none; }
+        
+        .lyrics-modal {
+            background: #1a1a1a;
+            width: 90%; max-width: 500px;
+            max-height: 80vh;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            overflow-y: auto;
+            position: relative;
+        }
+        #closeLyricsBtn {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; font-size: 1.5rem; color: #aaa; box-shadow: none; padding: 0;
+        }
+
+        /* ========================================= */
+        /* === PERBAIKAN KHUSUS LAYAR LANDSCAPE === */
+        /* ========================================= */
+        @media (max-height: 600px) {
+            .slide {
+                /* Matikan centering vertikal */
+                justify-content: flex-start; 
+                align-items: center;
+                padding-top: 10px;
+            }
+
+            /* Kecilkan elemen di slide 1 agar muat */
+            .team-logo { width: 80px; margin-bottom: 0.5rem; }
+            h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+            p { font-size: 0.9rem; margin-bottom: 1rem; display: none; /* Sembunyikan deskripsi di landscape agar tidak penuh */ }
+
+            /* Atur Slide 2 (Materi) agar bisa discroll dengan nyaman */
+            .playlist-wrapper {
+                padding-top: 10px;
+                /* Pastikan wrapper memanjang ke bawah */
+                height: auto; 
+                display: block; /* Ubah flex ke block agar scroll normal */
+            }
+
+            #backBtn {
+                display: inline-block;
+                padding: 5px 10px;
+                margin-bottom: 10px;
+            }
+
+            #audioPlayer {
+                height: 35px; /* Perkecil player */
+            }
+
+            #showLyricsBtn {
+                padding: 8px;
+                margin-bottom: 15px;
+            }
+
+            /* Pastikan list bisa diklik */
+            #playlist li {
+                padding: 10px;
+                margin-bottom: 8px;
+            }
+            
+            #playlist li strong {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="slide1" class="slide active">
+        <div class="container">
+            <img src="images/1000173031.jpg" alt="Logo Tim" class="team-logo">
+            <h1>Pusat Tanya Jawab</h1>
+            <p>Temukan jawaban strategi terbaik untuk membangun tim Anda.</p>
+            <div class="button-group">
+                <button id="enterBtn">Buka Materi Q&A</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="slide2" class="slide">
+        <div class="playlist-wrapper">
+            <button id="backBtn">&larr; Kembali</button>
+            
+            <audio id="audioPlayer" controls></audio>
+            <div id="nowPlaying">Silakan pilih pertanyaan di bawah...</div>
+            
+            <button id="showLyricsBtn">Tampilkan Narasi Jawaban</button>
+            
+            <ul id="playlist">
+                </ul>
+        </div>
+    </div>
+
+    <div id="lyricsOverlay" class="hidden">
+        <div class="lyrics-modal">
+            <button id="closeLyricsBtn">&times;</button>
+            <h2 id="lyricsTitle" style="font-size: 1.1rem; color:#ff6b00; margin-top:0;">Pertanyaan</h2> 
+            <div id="lyricsContent" style="line-height: 1.6; color: #ddd; font-size: 0.95rem;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA Q&A (Contoh - Sesuaikan dengan file audio Anda) ---
+        const qaData = [
+            {
+                id: 1,
+                title: "1. Kenapa saya harus bergabung dengan OPALP melalui DV TEAM?",
+                audio: "audio/qna1.mp3", // Ganti dengan path audio asli
+                lyrics: "Karena DV TEAM menyediakan sistem pendukung (support system) yang lengkap, mulai dari materi edukasi, alat bantu promosi, hingga bimbingan strategi secara bertahap. Di sini Anda tidak berjalan sendirian, melainkan didukung oleh komunitas yang solid."
+            },
+            {
+                id: 2,
+                title: "2. Bagaimana cara memulai jika saya tidak punya pengalaman?",
+                audio: "audio/qna2.mp3",
+                lyrics: "Tidak masalah. Sistem kami dirancang untuk pemula. Langkah pertama adalah mengikuti 'Fase 1: Membangun Anggota Tim'. Gunakan alat bantu kalkulator dan skrip yang sudah kami sediakan di grup. Fokus Anda hanya mengundang, biar alat bantu yang menjelaskan."
+            },
+            {
+                id: 3,
+                title: "3. Apa keuntungan upgrade level membership?",
+                audio: "audio/qna3.mp3",
+                lyrics: "Upgrade level membuka potensi bonus yang lebih besar dan fitur eksklusif. Di level yang lebih tinggi, Anda mendapatkan akses ke sinyal trading prioritas dan bonus matching dari kedalaman tim yang lebih jauh."
+            },
+            {
+                id: 4,
+                title: "4. Strategi apa yang paling efektif untuk pemula?",
+                audio: "audio/qna4.mp3",
+                lyrics: "Gunakan strategi 'Faktor Kali'. Ajak 5 orang, lalu bantu 5 orang tersebut untuk mengajak 5 orang lagi. Fokus pada duplikasi sederhana menggunakan materi yang ada di web DV TEAM ini."
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const enterBtn = document.getElementById('enterBtn');
+        const backBtn = document.getElementById('backBtn');
+        const slide1 = document.getElementById('slide1');
+        const slide2 = document.getElementById('slide2');
+        const playlistEl = document.getElementById('playlist');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const nowPlaying = document.getElementById('nowPlaying');
+        const showLyricsBtn = document.getElementById('showLyricsBtn');
+        const lyricsOverlay = document.getElementById('lyricsOverlay');
+        const closeLyricsBtn = document.getElementById('closeLyricsBtn');
+        const lyricsTitle = document.getElementById('lyricsTitle');
+        const lyricsContent = document.getElementById('lyricsContent');
+
+        let currentData = null;
+
+        // --- NAVIGASI SLIDE ---
+        enterBtn.addEventListener('click', () => {
+            slide1.classList.remove('active');
+            slide2.classList.add('active');
+        });
+
+        backBtn.addEventListener('click', () => {
+            slide2.classList.remove('active');
+            slide1.classList.add('active');
+            audioPlayer.pause(); // Stop musik pas kembali
+        });
+
+        // --- RENDER PLAYLIST ---
+        function renderPlaylist() {
+            playlistEl.innerHTML = '';
+            qaData.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${item.title}</strong>`;
+                li.addEventListener('click', () => playAudio(item, li));
+                playlistEl.appendChild(li);
+            });
+        }
+
+        // --- FUNGSI AUDIO PLAYER ---
+        function playAudio(item, liElement) {
+            // Update UI Active State
+            const allLi = playlistEl.querySelectorAll('li');
+            allLi.forEach(el => el.classList.remove('active-question'));
+            liElement.classList.add('active-question');
+
+            // Set Data
+            currentData = item;
+            audioPlayer.src = item.audio;
+            nowPlaying.textContent = "Memutar: " + item.title;
+            
+            // Auto Play
+            audioPlayer.play().catch(e => console.log("Autoplay dicegah browser, silakan klik play manually"));
+
+            // Siapkan Narasi
+            lyricsTitle.textContent = item.title;
+            lyricsContent.textContent = item.lyrics;
+        }
+
+        // --- MODAL NARASI ---
+        showLyricsBtn.addEventListener('click', () => {
+            if (!currentData) {
+                alert("Silakan pilih pertanyaan terlebih dahulu.");
+                return;
+            }
+            lyricsOverlay.classList.remove('hidden');
+        });
+
+        closeLyricsBtn.addEventListener('click', () => {
+            lyricsOverlay.classList.add('hidden');
+        });
+        
+        // Tutup modal jika klik di luar kotak
+        lyricsOverlay.addEventListener('click', (e) => {
+            if (e.target === lyricsOverlay) {
+                lyricsOverlay.classList.add('hidden');
+            }
+        });
+
+        // --- INIT ---
+        renderPlaylist();
+
+        // --- SERVICE WORKER (PWA) ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>
